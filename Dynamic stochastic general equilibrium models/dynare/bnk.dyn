@@ -1,0 +1,111 @@
+//basic new keynesian model (Gali 2008)
+//log-linearized
+
+
+var 
+
+//inflation 
+pi, 
+//output gap
+gap, 
+//output
+y,
+//natural output
+yn,
+//interest rate
+i, 
+//natural rate of interest
+rn,
+//money growth
+M,
+//employment
+n,
+//monetary shock
+v,
+//technology shock
+a,
+
+//annualized variables
+pia, ia, ra, MA;
+
+varexo
+epsv, epsa;
+
+parameters
+alfa, bet, epsi, phi, phipi, phigap, rhoa, rhov, gam, theta, eta;
+
+alfa=1/3;     //elasticity of level of production in relation to capital
+bet=0.99;     //discount factor
+epsi=6;       //elasticity of substitution among intermediate goods
+phi=1;        //marginal disutility with regard to supply of labour
+phipi=1.5;    //sensitivity of monetary policy to inflation target
+phigap=0.5/4; //sensitivity of monetary policy to output gap target
+rhoa=0.9;     //autoregressive parameter - persistency of productivity shock
+rhov=0.5;     //autoregressive parameter - persistency of monetary shock
+gam=1;        //relative risk aversion coefficient
+theta=2/3;    //price stickiness probability, with 10^(-10) no effect of monetary on real variables
+eta=4;       //interest semi-elasticity of money demand
+
+model(linear); // 10 equations 
+
+/*------------------------------------------------------------------------------------------------------------------*/
+//parameters' transformations
+# theta_big=(1-alfa)/(1-alfa+alfa*epsi);
+# lam=(1-theta)*(1-bet*theta)/theta*theta_big;
+# kap=lam*(gam+(phi+alfa)/(1-alfa));
+# ksi=(1+phi)/(gam*(1-alfa)+phi+alfa);
+# mi=log(epsi/(epsi-1));
+# wal=-(1-alfa)*(mi-log(1-alfa))/(gam*(1-alfa)+phi+alfa);
+# rho=-ln(bet);
+
+//new keynesian phillips curve
+pi=bet*pi(+1)+kap*gap;   //1
+
+//dynamic IS equation
+gap=-1/gam*(i-pi(+1)-(rn+rho))+gap(+1);   //2
+
+//output gap
+gap=y-yn;   //3
+
+//natural output
+yn=ksi*a+wal; //4
+
+//natural rate of interest
+rn=-gam*ksi*(1-rhoa)*a;   //5
+
+//nominal interest rate rule
+i=rho+phipi*pi+phigap*gap+v;   //6
+
+//money growth
+M=pi+y-y(-1)-eta*(i-i(-1));   //7
+
+//employment
+y=a+(1-alfa)*n;   //8
+
+//monetary shock
+v=rhov*v(-1)+epsv;   //9
+
+//technology shock
+a=rhoa*a(-1)+epsa;   //10
+
+//annualized variables
+pia=pi*4;            //11
+ia=i*4;            //12
+ra=ia-pia(+1);            //13
+MA=M*4;            //14
+end;
+
+steady;
+check;
+
+shocks;
+var epsv; stderr 0.25;
+//var epsa; stderr 1;
+end;
+
+model_diagnostics;
+
+//stoch_simul(irf=13, noprint) gap, pia, ia, ra, MA, v, a; 
+stoch_simul(irf=13, noprint) gap, pia, yn, y, n, ia, ra, MA, v, a; 
+//stoch_simul(irf=13, nograph);
+//stoch_simul(irf=13, nograph, noprint);
